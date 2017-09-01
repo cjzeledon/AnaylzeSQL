@@ -1,0 +1,164 @@
+This dataset is a made-up voting database that includes nationwide voting records for four pressing issues. Votes are made on a per-city basis, and the following four tables exist in the data.
+
+Votes: each row represents a single vote from a person on an issue. The same person may vote for multiple issues, or they may only vote for one. Votes are tied to the city that their citizen is from.
+
+Cities: a bunch of cities, each tied to the state they're in.
+
+States: places where the cities are. Cities are linked to the state they occur in.
+
+Issues: a description of an issue that the people are voting on.
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+You can write as many queries as required to get the answers to the following questions. You do not need to solve this in one query.
+
+1. Were there more male or female voters in Greensboro?
+  // This is my thought process of how I was trying to get to the answer.
+  // The last statement is the answer I was looking for to give me the correct output.
+  
+  √ select * from cities join votes on cities.id=votes."cityId" where name='Greensboro';
+
+  √ select count(gender) from cities join votes on cities.id=votes."cityId" where name='Greensboro' and votes.gender='male';
+        396
+
+  √ select count(gender) from cities join votes on cities.id=votes."cityId" where name='Greensboro' and votes.gender='female';
+        404
+
+  √√√√√√
+  select
+    gender, count(gender) from votes join
+    cities on cities.id=votes."cityId" where
+    name='Greensboro' group by
+    votes.gender;
+
+          gender | count
+          --------+-------
+          female |   404
+          male   |   396
+
+2. What is the average age of voters in Orlando? AVG(column)
+  select
+    avg(age) from cities join
+    votes on cities.id=votes."cityId" where
+    name='Orlando';
+
+               avg
+        ---------------------
+        51.4562500000000000
+        (1 row)
+
+3. Which state has the most cities listed?
+  select
+    states.name, count(cities.name) from
+    states join cities on states.id=cities."stateId" group by
+    states.name order by
+    count(cities.name) desc limit(1);
+
+          name    | count
+        ------------+-------
+        California |   212
+
+
+4. Which state had the most votes placed?
+  // This is my thought process. I hope this is the correct answer to what you are asking for!
+
+  √ select * from states join cities on states.id=cities."stateId" limit 5;
+
+  √ select * from states join cities on states.id=cities."stateId" join votes on votes."cityId"=cities.id limit 5;
+
+  √√√√√√
+  select
+    states.name, count(votes.id) from
+    states join cities on states.id=cities."stateId" join
+    votes on votes."cityId"=cities.id group by
+    states.name order by
+    count(votes.id) desc;
+
+      name         | count
+    ----------------------+--------
+    California           | 169600
+    Texas                |  66400
+    Florida              |  58400
+    Illinois             |  41600
+    Massachusetts        |  28800
+    Ohio                 |  26400
+    Michigan             |  24800
+    Washington           |  22400
+    Arizona              |  20000
+    Minnesota            |  19200
+    New Jersey           |  17600
+    North Carolina       |  17600
+    Colorado             |  16800
+    Indiana              |  16800
+    Wisconsin            |  16000
+    Utah                 |  15200
+    Georgia              |  14400
+
+    //This is not the total list as I only copied and pasted half of the result.
+    // And of course, Chad reminded me to use limit on the query search to only give me the one result instead of several results and the statement would be written as below:
+      select states.name, count(votes.id) from states join cities on states.id=cities."stateId" join votes on votes."cityId"=cities.id group by states.name order by count(votes.id) desc limit(1);
+
+5. What percentage of cities passed the minimum wage issue (> 50% of votes)?
+    // Again, I'm working through my thought process with these statements.
+    // the last statement is the answer!!!!
+
+    √ select count(in_favor) from votes join cities on votes."cityId"=cities.id join issues on issues.id=votes."issueId" where in_favor='t' and "issueId"=2;
+
+    √ select cities.name, count(in_favor) from votes join cities on votes."cityId"=cities.id join issues on issues.id=votes."issueId" where in_favor='t' and "issueId"=2 group by cities.name;
+
+    √ select cities.name, (count(in_favor)*100) / (count(cities.name)) as percentage from votes join cities on votes."cityId"=cities.id join issues on issues.id=votes."issueId" where in_favor='t' and "issueId"=2 group by cities.name;
+
+    √√√√√√√
+    select
+      count(*) from (select count(in_favor), cities.name from
+      votes join cities on votes."cityId"=cities.id join
+      issues on issues.id=votes."issueId" where
+      in_favor='t' and "issueId"=2 group by
+      cities.name having count(in_favor) > 100) as
+      totally_in_favor;
+
+              count
+             -------
+                463
+             (1 row)
+
+
+
+
+
+6. How many of the issues were approved in each of the following cities? An issue is 'approved' if it got more than 50% of the votes.
+        Dallas
+        Atlanta
+        Anaheim
+        Boston
+
+    // Here is my thought process again. The last statement is the correct statement for the output!
+
+    √ select count(*) from (select count(in_favor), cities.name from votes join cities on votes."cityId"=cities.id join issues on issues.id=votes."issueId" where in_favor='t' group by cities.name having count(in_favor) > 100) as the_cool_cities_approved;
+
+    √ select count(in_favor), cities.name from votes join cities on votes."cityId"=cities.id join issues on issues.id=votes."issueId" where in_favor='t' and cities.name='Dallas' and cities.name='Atlanta' group by cities.name having count(in_favor) > 100;
+
+    √ select count(in_favor), cities.name from votes join cities on votes."cityId"=cities.id join issues on issues.id=votes."issueId" where in_favor='t' and cities.name like 'Atlanta' group by cities.name having count(in_favor) > 100;
+
+    √ select count(in_favor), cities.name from votes join cities on votes."cityId"=cities.id join issues on issues.id=votes."issueId" where in_favor='t' and cities.name similar to 'Dallas%|Atlanta%' group by cities.name having count(in_favor) > 100;
+
+    √√√√√√√
+    select
+      issues.id, cities.name from votes join
+      cities on votes."cityId" = cities.id join
+      issues on issues.id = votes."issueId" where in_favor='t' and cities.name similar to 'Dallas%|Atlanta%|Anaheim%|Boston%' group by cities.name, issues.id having count(in_favor) > 100;
+
+
+          id |  name
+        ----+---------
+        2 | Anaheim
+        3 | Anaheim
+        4 | Anaheim
+        1 | Atlanta
+        2 | Atlanta
+        3 | Atlanta
+        4 | Atlanta
+        1 | Boston
+        2 | Dallas
+        3 | Dallas
+        4 | Dallas
